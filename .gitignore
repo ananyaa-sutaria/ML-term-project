@@ -1,6 +1,7 @@
 .venv/
 data/
-processed/*.npz
+*.npz
 .ipynb_checkpoints/
 __pycache__/
 .DS_Store
+processed/asl_quality.csv
