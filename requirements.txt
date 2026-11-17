@@ -1,8 +1,9 @@
 numpy
 pandas
+scipy
 scikit-learn
-matplotlib
 scikit-image
+matplotlib
+pillow
 jupyter
 kaggle
-pillow
