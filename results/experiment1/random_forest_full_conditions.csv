@@ -1,0 +1,8 @@
+condition,value,count,errors,error_rate
+lighting,bright,2950,681,0.23084745762711864
+lighting,dim,2975,1669,0.5610084033613445
+lighting,normal,2950,743,0.25186440677966104
+blur_flag,False,8864,3093,0.3489395306859206
+blur_flag,True,11,0,0.0
+confusable_hash,False,8341,2719,0.3259800983095552
+confusable_hash,True,534,374,0.700374531835206
