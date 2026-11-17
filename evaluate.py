@@ -33,6 +33,10 @@ def time_inference(predict_one, inputs, warmup=5):
     """Milliseconds per image with batch size 1. predict_one gets ONE input at a time, exactly
     as the webcam app would call it (e.g. one image, or one feature vector)."""
     inputs = list(inputs)
+    if not inputs:
+        raise ValueError("timing inputs must not be empty")
+    if warmup < 0:
+        raise ValueError("warmup must be non-negative")
     for x in inputs[:warmup]:
         predict_one(x)
     times = []
@@ -62,11 +66,24 @@ def evaluate(y_true, y_pred, predict_one=None, timing_inputs=None, name=None, se
     labels = list(range(len(classes)))
     p, r, f, support = precision_recall_fscore_support(y_true, y_pred, labels=labels, zero_division=0)
     macro = precision_recall_fscore_support(y_true, y_pred, labels=labels, average="macro", zero_division=0)
+    if (y_true.ndim != 1 or y_pred.ndim != 1 or not len(y_true)
+            or y_true.shape != y_pred.shape):
+        raise ValueError("y_true and y_pred must be nonempty, equally sized 1-D arrays")
+    labels = list(range(len(classes)))
+    if not labels or not np.isin(y_true, labels).all() or not np.isin(y_pred, labels).all():
+        raise ValueError("labels must be indices into classes")
+    if (predict_one is None) != (timing_inputs is None):
+        raise ValueError("predict_one and timing_inputs must be supplied together")
+    p, r, f, support = precision_recall_fscore_support(y_true, y_pred, labels=labels, zero_division=0)
+    macro = precision_recall_fscore_support(y_true, y_pred, labels=labels, average="macro", zero_division=0)
+    weighted = precision_recall_fscore_support(y_true, y_pred, labels=labels, average="weighted", zero_division=0)
     cm = confusion_matrix(y_true, y_pred, labels=labels)
     res = {
         "name": name, "split": split, "n_samples": int(len(y_true)),
         "accuracy": float(accuracy_score(y_true, y_pred)),
         "macro_precision": float(macro[0]), "macro_recall": float(macro[1]), "macro_f1": float(macro[2]),
+        "weighted_precision": float(weighted[0]), "weighted_recall": float(weighted[1]),
+        "weighted_f1": float(weighted[2]),
         "per_class": {c: {"precision": float(p[i]), "recall": float(r[i]), "f1": float(f[i]), "support": int(support[i])}
                       for i, c in enumerate(classes)},
         "confusion_matrix": cm.tolist(), "classes": list(classes),
@@ -104,6 +121,14 @@ def top_confusions(res, k=10):
     classes = res["classes"]
     return pd.DataFrame([{"true": classes[i // len(classes)], "predicted": classes[i % len(classes)],
                           "count": int(cm.flat[i])} for i in order])
+    if k < 0:
+        raise ValueError("k must be non-negative")
+    order = np.argsort(-cm, axis=None, kind="stable")
+    order = [i for i in order if cm.flat[i] > 0][:k]
+    classes = res["classes"]
+    return pd.DataFrame([{"true": classes[i // len(classes)], "predicted": classes[i % len(classes)],
+                          "count": int(cm.flat[i])} for i in order],
+                        columns=["true", "predicted", "count"])
 
 
 def plot_confusion(res, normalize=True, ax=None):

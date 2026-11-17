@@ -11,6 +11,7 @@ the same split and the same label order:
 The split lives in processed/asl_alphabet_manifest.csv. Nobody makes their own.
 """
 import os
+import tempfile
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 
@@ -81,6 +82,29 @@ def build_cache(force=False):
     if f.exists() and not force:
         return f
     np.save(f, read_images(list_images()["path"], CACHE_SIZE))
+    paths = list_images()["path"].to_numpy()
+    if not len(paths):
+        raise ValueError(f"no training images found in {TRAIN_DIR}")
+    with tempfile.NamedTemporaryFile(dir=CACHE_DIR, suffix=".npy", delete=False) as temp:
+        temp_path = Path(temp.name)
+    try:
+        cache = np.lib.format.open_memmap(
+            temp_path, mode="w+", dtype=np.uint8,
+            shape=(len(paths), CACHE_SIZE, CACHE_SIZE, 3)
+        )
+        try:
+            with ThreadPool(min(8, os.cpu_count() or 1)) as pool:
+                for start in range(0, len(paths), 256):
+                    batch = paths[start:start + 256]
+                    jobs = [(path, CACHE_SIZE) for path in batch]
+                    cache[start:start + len(batch)] = np.stack(pool.map(_read, jobs, chunksize=8))
+            cache.flush()
+        finally:
+            del cache
+        os.replace(temp_path, f)
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
     return f
 
 
