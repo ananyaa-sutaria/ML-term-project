@@ -62,6 +62,10 @@ def evaluate(y_true, y_pred, predict_one=None, timing_inputs=None, name=None, se
     Returns the metrics dict (also written to disk when save=True and name is given).
     """
     y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)
+    assert y_true.shape == y_pred.shape, "y_true and y_pred must have the same length"
+    labels = list(range(len(classes)))
+    p, r, f, support = precision_recall_fscore_support(y_true, y_pred, labels=labels, zero_division=0)
+    macro = precision_recall_fscore_support(y_true, y_pred, labels=labels, average="macro", zero_division=0)
     if (y_true.ndim != 1 or y_pred.ndim != 1 or not len(y_true)
             or y_true.shape != y_pred.shape):
         raise ValueError("y_true and y_pred must be nonempty, equally sized 1-D arrays")
@@ -113,6 +117,10 @@ def top_confusions(res, k=10):
     """The k most frequent (true letter, predicted letter) mistakes, for the error analysis."""
     cm = np.array(res["confusion_matrix"])
     np.fill_diagonal(cm, 0)
+    order = np.argsort(cm, axis=None)[::-1][:k]
+    classes = res["classes"]
+    return pd.DataFrame([{"true": classes[i // len(classes)], "predicted": classes[i % len(classes)],
+                          "count": int(cm.flat[i])} for i in order])
     if k < 0:
         raise ValueError("k must be non-negative")
     order = np.argsort(-cm, axis=None, kind="stable")

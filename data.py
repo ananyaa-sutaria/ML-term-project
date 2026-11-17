@@ -81,6 +81,7 @@ def build_cache(force=False):
     f = CACHE_DIR / f"rgb{CACHE_SIZE}.npy"
     if f.exists() and not force:
         return f
+    np.save(f, read_images(list_images()["path"], CACHE_SIZE))
     paths = list_images()["path"].to_numpy()
     if not len(paths):
         raise ValueError(f"no training images found in {TRAIN_DIR}")
