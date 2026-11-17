@@ -68,6 +68,3 @@ X_real, y_real = load_real_world()       # photos taken by the team (webcam-styl
 - **YOLO classification layout:** `data.make_yolo_folders()` writes `~/ml-data/asl-yolo-cls/{train,val,test}/<letter>/`.
 
 To rebuild the manifest: `python make_manifest.py` (runs the leak checks and fails if the split is not clean).
-
-## Older work
-`archive/` holds the first preprocessing pass (Sign Language MNIST and a 28x28 ASL notebook with a random split). It is superseded by the files above.
