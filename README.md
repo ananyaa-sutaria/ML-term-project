@@ -155,3 +155,52 @@ The image cache is built in bounded batches and is replaced only after a success
 See the completed run's [error analysis](results/experiment1/error_analysis.md).
 
 To rebuild the manifest: `python make_manifest.py` (runs the leak checks and fails if the split is not clean).
+
+
+## Experiment 2: CNN and Transfer Learning
+
+After downloading the dataset and installing `requirements.txt`, run:
+
+```bash
+python experiment2.py
+```
+
+The script compares two custom CNN architectures trained from scratch and a pretrained MobileNetV2 with a frozen ImageNet backbone. All models use the project's fixed manifest splits, random seed 42, Adam optimizer, sparse categorical cross-entropy, batch size 32, and 10 training epochs.
+
+Seven configurations are evaluated:
+
+- Simple CNN (64x64 RGB)
+- Complex CNN (64x64 RGB)
+- Complex CNN with training data augmentation
+- Complex CNN with grayscale images
+- Complex CNN with reduced resolution (32x32 RGB)
+- Complex CNN with a 10-class subset
+- Pretrained MobileNetV2 (64x64 RGB)
+
+The complex CNN serves as the baseline for the data variation experiments. Augmentation is applied only to the training set. The 10-class configuration is treated as a separate classification task.
+
+All models use `evaluate.py` to save validation and test JSON reports and prediction arrays under `results/`. Reports include accuracy, macro and weighted precision, recall and F1, per-class scores, confusion matrices, training time, and CPU inference latency. Inference timing uses 200 individual test images with a batch size of one.
+
+Training histories, training curves, confusion matrices, and the comparison table are saved under `results/experiment2/`. Experimental results are also recorded in the shared `results/experiment_log.csv`.
+
+The best configuration, selected by final validation accuracy, is the complex CNN with 64x64 RGB images and no augmentation. It achieves 88.89% validation accuracy, 86.78% test accuracy, and 86.54% test macro F1.
+
+Trained models are saved as `.keras` files under `results/`. The selected model is:
+
+`results/experiment2_complex_cnn_rgb64_model.keras`
+
+The `CNNASLModel` wrapper in `cnn_model.py` provides the shared `predict(rgb_image)` interface, returning the predicted letter and confidence for a preprocessed 64x64 RGB image.
+
+See `03_cnn.ipynb` for experimental methodology, model comparisons, training curves, confusion analysis, and limitations. The notebook reads saved results without retraining the models.
+
+To reproduce the experiments without overwriting existing results, run:
+
+```bash
+python experiment2.py --results-dir results/experiment2_rerun
+```
+
+To run an individual configuration, use:
+
+```bash
+python experiment2.py --experiment complex_cnn_rgb64 --results-dir results/experiment2_rerun
+```
